@@ -12,22 +12,20 @@ public class MainScenePanel extends JPanel {
         this.player = new Player(100, 100, 60, 60);
         this.setFocusable(true);
         this.requestFocus();
-        this.gameLoop();
         this.setDoubleBuffered(true);
+
         MovementListener movementListener = new MovementListener(player);
         this.addKeyListener(movementListener);
-
+        JButton soundButton = Utils.createSoundButton();
+        this.add(soundButton);
+        this.gameLoop();
     }
 
     public void gameLoop() {
         new Thread(() -> {
             while (true) {
                 repaint();
-                try {
-                    Thread.sleep(16);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+                Utils.sleep(16);
             }
         }).start();
     }
@@ -36,5 +34,4 @@ public class MainScenePanel extends JPanel {
         super.paintComponent(graphics);
         this.player.paint(graphics);
     }
-
 }

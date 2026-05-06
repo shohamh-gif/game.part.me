@@ -4,18 +4,13 @@ import javax.swing.*;
 import java.awt.*;
 
 public class MainMenu extends JFrame {
-    private static final int TITLE_WIDTH = 800;
-    private static final int TITLE_HEIGHT = 150;
-    private static final int TITLE_Y_POSITION = 150;
-    private static final int TITLE_FONT_SIZE = 100;
     private static final int BUTTON_WIDTH = 300;
     private static final int BUTTON_HEIGHT = 70;
-    private static final int START_BUTTON_Y = 400;
-    private static final int INSTRUCTIONS_BUTTON_Y = 500;
+    private static final int START_BUTTON_Y = 210;
+    private static final int INSTRUCTIONS_BUTTON_Y = START_BUTTON_Y + 90;
     private static final int BUTTON_FONT_SIZE = 30;
 
-    private static final Color TITLE_COLOR = new Color(205, 92, 92);
-    private static final Color BUTTON_COLOR = new Color(255, 182, 193);
+    private static final Color BUTTON_COLOR = new Color(255, 180, 193);
 
     private static final String MUSIC_PATH = "/The_Victory_Lap.wav";
 
@@ -31,15 +26,8 @@ public class MainMenu extends JFrame {
         BackgroundPanel backgroundPanel = new BackgroundPanel();
         this.setContentPane(backgroundPanel);
 
-        JLabel titleLabel = new JLabel("Sugar Rush", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Comic Sans MS", Font.BOLD, TITLE_FONT_SIZE));
-        titleLabel.setForeground(TITLE_COLOR);
-        int titleX = (Main.WINDOW_WIDTH - TITLE_WIDTH) / 2;
-        titleLabel.setBounds(titleX, TITLE_Y_POSITION, TITLE_WIDTH, TITLE_HEIGHT);
-        backgroundPanel.add(titleLabel);
-
         int buttonX = (Main.WINDOW_WIDTH - BUTTON_WIDTH) / 2;
-        JButton startButton = new JButton("Start");
+        RoundedButton startButton = new RoundedButton("Start", 40);
         startButton.setFont(new Font("Arial", Font.BOLD, BUTTON_FONT_SIZE));
         startButton.setBackground(BUTTON_COLOR);
         startButton.setForeground(Color.WHITE);
@@ -48,7 +36,7 @@ public class MainMenu extends JFrame {
         startButton.addActionListener(e -> startGame(backgroundPanel));
         backgroundPanel.add(startButton);
 
-        JButton instructionButton = new JButton("How To Play");
+        RoundedButton instructionButton = new RoundedButton("How to play", 40);
         instructionButton.setFont(new Font("Arial", Font.BOLD, BUTTON_FONT_SIZE));
         instructionButton.setBackground(BUTTON_COLOR);
         instructionButton.setForeground(Color.WHITE);
@@ -59,14 +47,13 @@ public class MainMenu extends JFrame {
         JButton soundButton = Utils.createSoundButton();
         backgroundPanel.add(soundButton);
 
-        this.revalidate();
-        this.repaint();
+        this.revalidate();//רענון הסידור של המסך
+        this.repaint();// 2 הפקודות הן רענון חדפ
         this.setVisible(true);
     }
 
     private void startGame(BackgroundPanel backgroundPanel) {
-        backgroundPanel.stopAnimation();
-        this.dispose();
+        this.dispose(); // סוגר את החלון של הבאקראונד
         JFrame window = new JFrame("Sugar Rush");
         window.setSize(Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT);
         window.setResizable(false);

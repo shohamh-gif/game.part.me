@@ -31,6 +31,8 @@ public class MovementListener implements KeyListener {
         } else if (e.getKeyCode() == KeyEvent.VK_UP) {
             this.player.moveUp();
         }
+
+
     }
 
     public void keyReleased(KeyEvent e) {

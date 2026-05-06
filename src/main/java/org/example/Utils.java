@@ -22,7 +22,8 @@ public class Utils {
     }
 
     public static void initializeMusic(String path) {
-        if (backgroundMusic == null) {
+        if (backgroundMusic == null) // צריך לבדוק
+        {
             backgroundMusic = new SoundManager(path);
             backgroundMusic.playLoop();
         }
@@ -30,7 +31,8 @@ public class Utils {
 
     // פונקציית הקסם: יוצרת ומחזירה כפתור מוזיקה פעיל לחלוטין!
     public static JButton createSoundButton() {
-        if (soundOnIcon == null || soundOffIcon == null) {
+        if (soundOnIcon == null || soundOffIcon == null) //צריך לבדוק
+        {
             soundOnIcon = resizeIcon("/sound_on.png", 50, 50);
             soundOffIcon = resizeIcon("/sound_off.png", 50, 50);
         }
@@ -39,6 +41,7 @@ public class Utils {
         soundButton.setFocusPainted(false);
         soundButton.setContentAreaFilled(false);
         soundButton.setBorderPainted(false);
+        soundButton.setFocusable(false);
 
         // הגדרת תמונה התחלתית לפי המצב הנוכחי של המוזיקה
         if (isMusicPlaying && soundOnIcon != null) {

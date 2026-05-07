@@ -2,7 +2,6 @@ package org.example;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.InputStream;
 import java.util.Random;
 
 public class MainScenePanel extends JPanel {
@@ -16,9 +15,10 @@ public class MainScenePanel extends JPanel {
     private final int CAKE_SIZE = 50;
     private LevelsBackground levelsBackground;
 
+    private int currentLevel = 1;
+    private final int MAX_LEVELS = 9;
+
     public MainScenePanel(int x, int y, int width, int height) {
-        this.cakes = new Cake[100];
-        this.cakesCount = 0;
         this.candyImages = new String[]{
                 "/Blue_candy.png",
                 "/Orange_candy.png",
@@ -29,154 +29,147 @@ public class MainScenePanel extends JPanel {
         this.setBounds(x, y, width, height);
         this.setLayout(null);
         this.levelsBackground = new LevelsBackground();
-        //בניית המבוך
-        cakesCount = 0;
-        int cols = width / CAKE_SIZE; // כמות עמודות
-        int rows = height / CAKE_SIZE; // כמות שורות
-        int midX = cols / 2;
-        int midY = rows / 2;
 
-        // הגדרת מערכים חד-מימדיים
-        int[] xPositions = new int[200]; // מיקומי האיקס של העוגות
-        int[] yPositions = new int[200]; // מיקומי הוואי של העוגות
-        int posCount = 0; // סופר כמה מיקומים שמרנו בתוך המערכים האלה
+        this.setFocusable(true);
+        this.requestFocus();
+        this.setDoubleBuffered(true);
 
-        // 1. רבע שמאלי עליון
-        for (int gridX = midX - 6; gridX <= midX - 2; gridX++) {
-            xPositions[posCount] = gridX;
-            yPositions[posCount] = midY - 4;
-            posCount++;
-        }
-        for (int gridY = midY - 3; gridY <= midY - 2; gridY++) {
-            xPositions[posCount] = midX - 6;
-            yPositions[posCount] = gridY;
-            posCount++;
-        }
-
-        // 2. רבע ימני עליון
-        for (int gridX = midX + 2; gridX <= midX + 6; gridX++) {
-            xPositions[posCount] = gridX;
-            yPositions[posCount] = midY - 4;
-            posCount++;
-        }
-        for (int gridY = midY - 3; gridY <= midY - 2; gridY++) {
-            xPositions[posCount] = midX + 6;
-            yPositions[posCount] = gridY;
-            posCount++;
-        }
-
-        // 3. רבע שמאלי תחתון
-        for (int gridX = midX - 6; gridX <= midX - 2; gridX++) {
-            xPositions[posCount] = gridX;
-            yPositions[posCount] = midY + 4;
-            posCount++;
-        }
-        for (int gridY = midY + 2; gridY <= midY + 3; gridY++) {
-            xPositions[posCount] = midX - 6;
-            yPositions[posCount] = gridY;
-            posCount++;
-        }
-
-        // 4. רבע ימני תחתון
-        for (int gridX = midX + 2; gridX <= midX + 6; gridX++) {
-            xPositions[posCount] = gridX;
-            yPositions[posCount] = midY + 4;
-            posCount++;
-        }
-        for (int gridY = midY + 2; gridY <= midY + 3; gridY++) {
-            xPositions[posCount] = midX + 6;
-            yPositions[posCount] = gridY;
-            posCount++;
-        }
-
-        // 5. --- הריבוע הפנימי החדש (עם פתח אחד בימין ופתח אחד בשמאל) ---
-
-        // קיר עליון של הריבוע הפנימי (סגור לגמרי)
-        for (int gridX = midX - 1; gridX <= midX + 2; gridX++) {
-            xPositions[posCount] = gridX;
-            yPositions[posCount] = midY - 1;
-            posCount++;
-        }
-
-        // קיר תחתון של הריבוע הפנימי (סגור לגמרי)
-        for (int gridX = midX - 1; gridX <= midX + 2; gridX++) {
-            xPositions[posCount] = gridX;
-            yPositions[posCount] = midY + 2;
-            posCount++;
-        }
-
-        // קיר שמאלי של הריבוע הפנימי - עם רווח (בעזרת תנאי שמדלג על האמצע)
-        for (int gridY = midY - 1; gridY <= midY + 2; gridY++) {
-            if (gridY != midY) {
-                xPositions[posCount] = midX - 2;
-                yPositions[posCount] = gridY;
-                posCount++;
-            }
-        }
-
-        // קיר ימני של הריבוע הפנימי - עם רווח (בעזרת תנאי שמדלג על האמצע)
-        for (int gridY = midY - 1; gridY <= midY + 2; gridY++) {
-            if (gridY != midY) {
-                xPositions[posCount] = midX + 3;
-                yPositions[posCount] = gridY;
-                posCount++;
-            }
-        }
-
-        // --- סיום וציור ---
-        // לולאה שמציירת את כל העוגות מהמערכים
-        for (int i = 0; i < posCount; i++) {
-            if (cakesCount < cakes.length) {
-                cakes[cakesCount++] = new Cake(xPositions[i] * CAKE_SIZE, yPositions[i] * CAKE_SIZE, CAKE_SIZE, CAKE_SIZE);
-            }
-        }
-        // 1. קודם כל יוצרים את השחקן!
-        this.player = new Player(100, 100, 60, 60);
-
-        // 2. עכשיו יוצרים אויבים בגודל 40x40
-        this.enemies = new Enemy[7];
-        int enemySize = 46;
-        this.enemies[0] = new EnemyBroccoli(200, 100, enemySize, enemySize);
-        this.enemies[1] = new EnemyBroccoli(400, 200, enemySize, enemySize);
-        this.enemies[2] = new EnemyBroccoli(600, 300, enemySize, enemySize);
-        this.enemies[3] = new EnemyEggplant(150, 200, enemySize, enemySize);
-        this.enemies[4] = new EnemyEggplant(300, 450, enemySize, enemySize);
-        this.enemies[5] = new EnemyEggplant(450, 500, enemySize, enemySize);
-        this.enemies[6] = new EnemyBellPepper(600, 50, enemySize, enemySize, this.player);
-
-        for (int i = 0; i < this.enemies.length; i++) {
-            this.enemies[i].setIsMoving(true);
-        }
-
-        this.setFocusable(true);//רשאי לקבל פוקוס מהמקלדת
-        this.requestFocus();//מקבל פוקוס מהמקלדת- השחקן יכול להגיב ללחיצות
-        this.setDoubleBuffered(true);// הפתרון לריצוד הגיף - כדי שלא נראה את המחיקה והציור בזמן אמת רק שהציור מוכן
+        loadLevel(currentLevel);
 
         MovementListener movementListener = new MovementListener(this, this.player);
         this.addKeyListener(movementListener);
+
         JButton soundButton = Utils.createSoundButton();
         this.add(soundButton);
+
         RoundedButton exitButton = new RoundedButton("Exit", 20);
         exitButton.setBounds(width - 65, 15, 60, 30);
-        exitButton.setBackground(new java.awt.Color(255, 100, 100));
+        exitButton.setBackground(new Color(255, 100, 100));
         exitButton.setForeground(Color.WHITE);
-        exitButton.setFont(new java.awt.Font("Arial", Font.BOLD, 12));
+        exitButton.setFont(new Font("Arial", Font.BOLD, 12));
         exitButton.setBorderPainted(false);
         exitButton.setFocusable(false);
         exitButton.addActionListener(e -> {
             System.exit(0);
         });
         this.add(exitButton);
-        spawnPrizes(10); // המספר קובע כמה סוכריות ייווצרו
+
         this.gameLoop();
+    }
 
+    private void loadLevel(int level) {
+        if (this.player == null) {
+            this.player = new Player(100, 100, 60, 60);
+        } else {
+            this.player.setX(100);
+            this.player.setY(100);
+        }
 
+        int difficultyTier = (level - 1) / 3;
+        int mazeTemplate = (level - 1) % 3;
+
+        int amountOfCandies = 5 + (difficultyTier * 3);
+        // תמיד לפחות 3 ירקות רגילים!
+        int normalEnemies = 3 + difficultyTier;
+        int smartEnemies = difficultyTier;
+
+        MazeBuilder mazeBuilder = new MazeBuilder();
+        // מעבירים גם את הקושי לבונה המבוכים
+        this.cakes = mazeBuilder.buildMaze(mazeTemplate, Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT, difficultyTier);
+        this.cakesCount = mazeBuilder.getCakesCount();
+
+        spawnPrizes(amountOfCandies);
+
+        // שולחים למחלקת האויבים גם את התבנית כדי שידעו איפה לחסום
+        setupEnemiesForLevel(normalEnemies, smartEnemies, mazeTemplate);
+
+        for (int i = 0; i < this.enemies.length; i++) {
+            if (this.enemies[i] != null) {
+                this.enemies[i].setIsMoving(true);
+            }
+        }
+    }
+
+    private void setupEnemiesForLevel(int normalEnemies, int smartEnemies, int mazeTemplate) {
+        int totalEnemies = normalEnemies + smartEnemies;
+        this.enemies = new Enemy[totalEnemies];
+
+        int cols = Main.WINDOW_WIDTH / CAKE_SIZE;
+        int rows = Main.WINDOW_HEIGHT / CAKE_SIZE;
+
+        // נקודות ספאון אסטרטגיות שתמיד פתוחות (פינות רחוקות ומרכזים)
+        int[] spawnX = {(cols - 3) * 50, 400, (cols - 5) * 50, 150, 500, 200};
+        int[] spawnY = {(rows - 3) * 50, (rows - 5) * 50, 300, 500, 150, 450};
+
+        int enemyIndex = 0;
+
+        for (int i = 0; i < normalEnemies; i++) {
+            int currentX = spawnX[enemyIndex % spawnX.length];
+            int currentY = spawnY[enemyIndex % spawnY.length];
+
+            // מחלקים את האויבים בין ברוקולי, חציל, גזר ותירס לפי השארית
+            int type = i % 4;
+            if (type == 0) this.enemies[enemyIndex] = new EnemyBroccoli(currentX, currentY, 46, 46);
+            else if (type == 1) this.enemies[enemyIndex] = new EnemyEggplant(currentX, currentY, 46, 46);
+            else if (type == 2) this.enemies[enemyIndex] = new EnemyCarrot(currentX, currentY, 46, 46);
+            else this.enemies[enemyIndex] = new EnemyCorn(currentX, currentY, 46, 46);
+
+            enemyIndex++;
+        }
+
+        for (int i = 0; i < smartEnemies; i++) {
+            int currentX = spawnX[enemyIndex % spawnX.length];
+            int currentY = spawnY[enemyIndex % spawnY.length];
+            this.enemies[enemyIndex] = new EnemyBellPepper(currentX, currentY, 46, 46, this.player);
+            enemyIndex++;
+        }
+    }
+
+    private void spawnPrizes(int amount) {
+        prizes = new Prize[amount];
+        Random random = new Random();
+
+        int safeMargin = 20;
+        int minX = 90 + safeMargin;
+        int maxX = Main.WINDOW_WIDTH - 48 - 15 - safeMargin;
+        int minY = 35 + safeMargin;
+        int maxY = Main.WINDOW_HEIGHT - 50 - 36 - safeMargin;
+
+        for (int i = 0; i < prizes.length; i++) {
+            int x, y;
+            do {
+                x = random.nextInt(maxX - minX) + minX;
+                y = random.nextInt(maxY - minY) + minY;
+            } while (!isValidPrizeLocation(x, y, i));
+
+            String randomCandy = candyImages[random.nextInt(candyImages.length)];
+            prizes[i] = new Prize(x, y, 15, 36, randomCandy);
+        }
+    }
+
+    private boolean isValidPrizeLocation(int x, int y, int currentPrizeIndex) {
+        Rectangle tempPrizeRect = new Rectangle(x, y, 15, 36);
+
+        for (int j = 0; j < cakesCount; j++) {
+            if (cakes[j] != null && tempPrizeRect.intersects(cakes[j].getRect())) {
+                return false;
+            }
+        }
+
+        int padding = 40;
+        Rectangle safeZone = new Rectangle(x - padding, y - padding, 15 + (padding * 2), 36 + (padding * 2));
+
+        for (int k = 0; k < currentPrizeIndex; k++) {
+            if (prizes[k] != null && safeZone.intersects(prizes[k].getBounds())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public boolean checkCakeCollision() {
         Rectangle characterRect = this.player.getRect();
-// עכשיו אנחנו שולטים בכל כיוון בנפרד!
-        int padLeft = 14;   // חותכים מהצדדים כדי שייכנס למעברים
+        int padLeft = 14;
         int padRight = 14;
         int padTop = 22;
         int padBottom = 5;
@@ -209,152 +202,26 @@ public class MainScenePanel extends JPanel {
         return false;
     }
 
-    public void gameLoop() {
-        new Thread(() -> {
-            while (true) {
-                for (int i = 0; i < this.enemies.length; i++) {
-                    // שומרים מיקום לפני תנועה
-                    int oldX = this.enemies[i].getX();
-                    int oldY = this.enemies[i].getY();
-
-                    this.enemies[i].move();
-
-                    // אם נתקע בקיר או באויב אחר
-                    boolean hitSomething = checkEnemyCakeCollision(this.enemies[i]);
-                    if (!hitSomething) {
-                        for (int j = 0; j < this.enemies.length; j++) {
-                            if (i != j && checkEnemyCollision(this.enemies[i], this.enemies[j])) {
-                                hitSomething = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (hitSomething) {
-                        // חזרה למיקום בטוח ושינוי כיוון
-                        this.enemies[i].setX(oldX);
-                        this.enemies[i].setY(oldY);
-                        this.enemies[i].reverseDirection();
-                    }
-
-                    // בדיקה מול השחקן
-                    if (checkCollision(this.player, this.enemies[i])) {
-                        // כאן אפשר להוסיף סיום משחק/הורדת חיים
-                    }
-                }
-                checkPrizeCollisions();
-                repaint();
-                Utils.sleep(16);
-            }
-        }).start();
-    }
-
-    public void paintComponent(Graphics graphics) {
-        super.paintComponent(graphics);
-        if (this.levelsBackground != null) {
-            this.levelsBackground.paint(graphics, this.getWidth(), this.getHeight());
-        }
-        for (int i = 0; i < this.enemies.length; i++) {
-            this.enemies[i].paint(graphics);
-        }
-        if (cakes.length > 0) {
-            for (int i = 0; i < cakesCount; i++) {
-                if (cakes[i] != null) {
-                    cakes[i].paint(graphics);
-                }
-            }
-        }
-        if (this.player != null) {
-            this.player.paint(graphics);
-
-        }
-
-        // ציור הסוכריות
-        if (prizes != null) {
-            for (int i = 0; i < prizes.length; i++) {
-                if (prizes[i] != null) {
-                    prizes[i].draw(graphics);
-                }
-            }
-        }
-        // --- חישוב מיקום הניקוד החדש ---
-        int buttonX = 20; // ה-X של הכפתור מ-Utils
-        int buttonWidth = 50; // הרוחב מ-Utils
-        int scoreX = buttonX + buttonWidth + 10; // יוצא 75
-        int scoreY = 55; // גובה שמתיישב יפה מול מרכז הכפתור
-
-        // הגדרת הפונט
-        graphics.setFont(new Font("Arial", Font.BOLD, 30));
-
-        // ציור הצל (שחור) - מוזז ב-2 פיקסלים מהניקוד המקורי
-        graphics.setColor(Color.BLACK);
-        graphics.drawString("Score: " + this.score, scoreX + 2, scoreY + 2);
-
-        // ציור הניקוד (ורוד)
-        graphics.setColor(new Color(180, 140, 207));
-        graphics.drawString("Score: " + this.score, scoreX, scoreY);
-
-
-    }
-
-    private void spawnPrizes(int amount) {
-        prizes = new Prize[amount];
-        Random random = new Random();
-
-        int safeMargin = 20;
-        int minX = 90 + safeMargin;
-        int maxX = Main.WINDOW_WIDTH - 48 - 15 - safeMargin;
-        int minY = 35 + safeMargin;
-        int maxY = Main.WINDOW_HEIGHT - 50 - 36 - safeMargin;
-
-        for (int i = 0; i < prizes.length; i++) {
-            int x, y;
-
-            // לולאת do-while: תעשה את ההגרלה כל עוד (while) המיקום לא חוקי
-            do {
-                x = random.nextInt(maxX - minX) + minX;
-                y = random.nextInt(maxY - minY) + minY;
-            } while (!isValidPrizeLocation(x, y, i));
-
-            // ברגע שהלולאה הסתיימה, זה אומר שיש לנו מיקום מושלם!
-            String randomCandy = candyImages[random.nextInt(candyImages.length)];
-            prizes[i] = new Prize(x, y, 15, 36, randomCandy);
-        }
-    }
-
-    // פונקציית העזר: מקבלת מיקום (X,Y) ואת מספר הסוכריות שכבר יצרנו, ומחזירה אם המיקום פנוי
-    private boolean isValidPrizeLocation(int x, int y, int currentPrizeIndex) {
-        Rectangle tempPrizeRect = new Rectangle(x, y, 15, 36);
-
-        // 1. האם המיקום נוגע בעוגה?
-        for (int j = 0; j < cakesCount; j++) {
-            if (cakes[j] != null && tempPrizeRect.intersects(cakes[j].getRect())) {
-                return false; // מצאנו עוגה, המיקום פסול
-            }
-        }
-
-        // 2. האם המיקום קרוב מדי לסוכריה שכבר הגרלנו?
-        int padding = 40;
-        Rectangle safeZone = new Rectangle(x - padding, y - padding, 15 + (padding * 2), 36 + (padding * 2));
-
-        for (int k = 0; k < currentPrizeIndex; k++) {
-            if (prizes[k] != null && safeZone.intersects(prizes[k].getBounds())) {
-                return false; // מצאנו סוכריה אחרת באזור, המיקום פסול
-            }
-        }
-        // אם לא נתקלנו ב-return false עד עכשיו, המיקום מושלם!
-        return true;
-    }
-
-    // פונקציה שמקבלת שחקן ואויב ומחזירה true אם יש התנגשות
     private boolean checkCollision(Player player, Enemy enemy) {
-        return (player.getX() + player.getWidth() > enemy.getX()) &&   // 1. צד ימין של השחקן עבר את שמאל של האויב?
-                (player.getX() < enemy.getX() + enemy.getWidth()) &&   // 2. צד שמאל של השחקן לפני ימין של האויב?
-                (player.getY() + player.getHeight() > enemy.getY()) &&  // 3. הלמטה של השחקן עבר את הלמעלה של האויב?
-                (player.getY() < enemy.getY() + enemy.getHeight());    // 4. הלמעלה של השחקן לפני הלמטה של האויב?
+        // מגלחים 15 פיקסלים מכל צד של השחקן כדי להתעלם מהרקע השקוף
+        int playerPadding = 15;
+        Rectangle playerHitbox = new Rectangle(
+                player.getX() + playerPadding,
+                player.getY() + playerPadding,
+                player.getWidth() - (playerPadding * 2),
+                player.getHeight() - (playerPadding * 2)
+        );
+        // מגלחים 10 פיקסלים מכל צד של הירק
+        int enemyPadding = 10;
+        Rectangle enemyHitbox = new Rectangle(
+                enemy.getX() + enemyPadding,
+                enemy.getY() + enemyPadding,
+                enemy.getWidth() - (enemyPadding * 2),
+                enemy.getHeight() - (enemyPadding * 2)
+        );
+        return playerHitbox.intersects(enemyHitbox);
     }
 
-    // פונקציה שמקבלת שני אויבים ומחזירה true אם הם נוגעים אחד בשני
     private boolean checkEnemyCollision(Enemy enemy1, Enemy enemy2) {
         return (enemy1.getX() + enemy1.getWidth() > enemy2.getX()) &&
                 (enemy1.getX() < enemy2.getX() + enemy2.getWidth()) &&
@@ -362,13 +229,12 @@ public class MainScenePanel extends JPanel {
                 (enemy1.getY() < enemy2.getY() + enemy2.getHeight());
     }
 
-    // תוסיפי את הפונקציה הזו למטה, ליד שאר פונקציות הבדיקה
     private boolean checkEnemyCakeCollision(Enemy enemy) {
         Rectangle enemyRect = enemy.getRect();
         for (int i = 0; i < this.cakesCount; i++) {
             if (cakes[i] != null) {
                 if (enemyRect.intersects(cakes[i].getRect())) {
-                    return true; // נתקע בעוגה!
+                    return true;
                 }
             }
         }
@@ -376,24 +242,159 @@ public class MainScenePanel extends JPanel {
     }
 
     public void checkPrizeCollisions() {
-        // לוקחים את המלבן (קופסת הפגיעה) של השחקן
         Rectangle playerRect = player.getRect();
+        boolean allCollected = true;
 
         if (prizes != null) {
             for (int i = 0; i < prizes.length; i++) {
-                // בודקים ששלושת התנאים מתקיימים:
-                // 1. יש סוכריה במשבצת הזו במערך
-                // 2. עדיין לא אספו אותה
-                // 3. המלבן של השחקן נוגע במלבן של הסוכריה
                 if (prizes[i] != null && !prizes[i].isCollected()) {
                     if (playerRect.intersects(prizes[i].getBounds())) {
-
-                        // בינגו! יש פגיעה. משנים לה את המצב ל"נאספה"
                         prizes[i].setCollected(true);
                         this.score += 10;
+                    } else {
+                        allCollected = false;
                     }
                 }
             }
         }
+
+        if (allCollected && prizes != null && prizes.length > 0) {
+            currentLevel++;
+            if (currentLevel > MAX_LEVELS) {
+                JOptionPane.showMessageDialog(null, "ניצחת במשחק! כל הכבוד!", "Victory", JOptionPane.INFORMATION_MESSAGE);
+                System.exit(0);
+            } else {
+                loadLevel(currentLevel);
+            }
+        }
+    }
+
+    public void gameLoop() {
+        new Thread(() -> {
+            while (true) {
+                for (int i = 0; i < this.enemies.length; i++) {
+                    if (this.enemies[i] == null) continue;
+
+                    int oldX = this.enemies[i].getX();
+                    int oldY = this.enemies[i].getY();
+
+                    this.enemies[i].move();
+
+                    // בדיקה אם האויב נתקע בקיר או באויב אחר
+                    boolean hitSomething = checkEnemyCakeCollision(this.enemies[i]);
+                    if (!hitSomething) {
+                        for (int j = 0; j < this.enemies.length; j++) {
+                            if (i != j && this.enemies[j] != null && checkEnemyCollision(this.enemies[i], this.enemies[j])) {
+                                hitSomething = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    // אם האויב נתקע - נחזיר אותו אחורה ונהפוך לו כיוון
+                    if (hitSomething) {
+                        this.enemies[i].setX(oldX);
+                        this.enemies[i].setY(oldY);
+                        this.enemies[i].reverseDirection();
+                    }
+
+                    // --- בדיקת פסילה: התנגשות בין השחקן לאויב ---
+                    if (checkCollision(this.player, this.enemies[i])) {
+
+                        // 1. הגדרת הכפתורים המותאמים אישית
+                        Object[] options = {"Restart Level", "Back to Menu"};
+
+                        // 2. בניית התוכן של חלון הדיאלוג
+                        JOptionPane pane = new JOptionPane(
+                                "אוי לא! נתפסת על ידי הירקות!\nהניקוד שלך: " + this.score,
+                                JOptionPane.WARNING_MESSAGE,
+                                JOptionPane.YES_NO_OPTION,
+                                null,
+                                options,
+                                options[0] // כפתור ה-Restart יהיה מסומן כברירת מחדל
+                        );
+
+                        // 3. יצירת חלון אמיתי ונטרול ה-X!
+                        JDialog dialog = pane.createDialog(SwingUtilities.windowForComponent(this), "Game Over");
+                        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE); // הקסם שמבטל את ה-X
+                        dialog.setVisible(true); // מציג את החלון ועוצר את המשחק עד שתהיה תשובה
+
+                        // 4. בדיקה מה המשתמש בחר
+                        Object selectedValue = pane.getValue();
+
+                        if (selectedValue != null && selectedValue.equals(options[0])) {
+                            // בחרו ב- Restart Level
+                            this.score = 0; // מאפסים את הניקוד
+                            loadLevel(this.currentLevel); // טוענים מחדש את השלב הנוכחי!
+                            break; // קריטי: יוצאים מיד מלולאת האויבים כדי להתחיל מחדש
+                        } else {
+                            // בחרו ב- Back to Menu
+                            Window parentWindow = SwingUtilities.windowForComponent(this);
+                            if (parentWindow != null) {
+                                parentWindow.dispose(); // סוגר את חלון המשחק לחלוטין
+                            }
+                            new MainMenu(); // פותח מחדש את התפריט הראשי
+                            return; // קריטי: מסיים את הלולאה האינסופית והורג את ה-Thread של המשחק!
+                        }
+                    }
+                }
+
+                checkPrizeCollisions();
+                repaint();
+                Utils.sleep(16);
+            }
+        }).start();
+    }
+
+    @Override
+    public void paintComponent(Graphics graphics) {
+        super.paintComponent(graphics);
+
+        if (this.levelsBackground != null) {
+            this.levelsBackground.paint(graphics, this.getWidth(), this.getHeight());
+        }
+
+        for (int i = 0; i < this.enemies.length; i++) {
+            if (this.enemies[i] != null) {
+                this.enemies[i].paint(graphics);
+            }
+        }
+
+        if (cakes != null) {
+            for (int i = 0; i < cakesCount; i++) {
+                if (cakes[i] != null) {
+                    cakes[i].paint(graphics);
+                }
+            }
+        }
+
+        if (this.player != null) {
+            this.player.paint(graphics);
+        }
+
+        if (prizes != null) {
+            for (int i = 0; i < prizes.length; i++) {
+                if (prizes[i] != null && !prizes[i].isCollected()) {
+                    prizes[i].draw(graphics);
+                }
+            }
+        }
+
+        int buttonX = 20;
+        int buttonWidth = 50;
+        int scoreX = buttonX + buttonWidth + 10;
+        int scoreY = 55;
+
+        graphics.setFont(new Font("Arial", Font.BOLD, 30));
+
+        graphics.setColor(Color.BLACK);
+        graphics.drawString("Score: " + this.score, scoreX + 2, scoreY + 2);
+        graphics.setColor(new Color(180, 140, 207));
+        graphics.drawString("Score: " + this.score, scoreX, scoreY);
+
+        graphics.setColor(Color.BLACK);
+        graphics.drawString("Level: " + this.currentLevel, scoreX + 202, scoreY + 2);
+        graphics.setColor(new Color(255, 180, 193));
+        graphics.drawString("Level: " + this.currentLevel, scoreX + 200, scoreY);
     }
 }

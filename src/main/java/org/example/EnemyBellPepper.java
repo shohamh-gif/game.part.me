@@ -27,13 +27,13 @@ public class EnemyBellPepper extends Enemy {
                 setDirection(RIGHT);
                 setCurrentImage(getRightImage());
                 if (!isAtRightBoundary()) {
-                    moveHorizontally(2);
+                    moveHorizontally(1);
                 }
             } else if (diffX < 0) {
                 setDirection(LEFT);
                 setCurrentImage(getLeftImage());
                 if (!isAtLeftBoundary()) {
-                    moveHorizontally(-2);
+                    moveHorizontally(-1);
                 }
             }
         } else {
@@ -41,13 +41,13 @@ public class EnemyBellPepper extends Enemy {
                 setDirection(DOWN);
                 setCurrentImage(getFrontImage());
                 if (!isAtBottomBoundary()) {
-                    moveVertically(2);
+                    moveVertically(1);
                 }
             } else if (diffY < 0) {
                 setDirection(UP);
                 setCurrentImage(getBackImage());
                 if (!isAtTopBoundary()) {
-                    moveVertically(-2);
+                    moveVertically(-1);
                 }
             }
         }

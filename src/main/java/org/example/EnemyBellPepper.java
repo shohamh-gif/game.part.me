@@ -12,18 +12,17 @@ public class EnemyBellPepper extends Enemy {
         setBackImage(loadImage("/BellPepper_Back.png"));
         setRightImage(loadImage("/BellPepper_Right.png"));
         setLeftImage(loadImage("/BellPepper_Left.png"));
-
         setCurrentImage(getFrontImage());
     }
 
     @Override
     public void move() {
-        if (!isMoving() || targetPlayer == null) return;
+        if (!isMoving() || this.targetPlayer == null) return;
 
-        int diffX = targetPlayer.getX() - getX();
-        int diffY = targetPlayer.getY() - getY();
+        int diffX = this.targetPlayer.getX() - this.getX();
+        int diffY = this.targetPlayer.getY() - this.getY();
 
-        if (Math.abs(diffX) > Math.abs(diffY)) {
+        if (Math.abs(diffX) > Math.abs(diffY)) { // הוא לא זז באלכסון, ולכן בודק איזה מרחק גדול יותר
             if (diffX > 0) {
                 setDirection(RIGHT);
                 setCurrentImage(getRightImage());

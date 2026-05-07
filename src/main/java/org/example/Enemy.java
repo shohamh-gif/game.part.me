@@ -53,7 +53,7 @@ public class Enemy {
         this.y += amount;
     }
 
-    // --- שירותי גבולות לילדים ---
+    // בודק אם האויב על הגבולות
     public boolean isAtRightBoundary() { return this.x + this.width >= Main.WINDOW_WIDTH - offsetRight; }
     public boolean isAtLeftBoundary() { return this.x <= offsetLeft; }
     public boolean isAtTopBoundary() { return this.y <= offsetTop; }
@@ -88,8 +88,7 @@ public class Enemy {
     public Rectangle getRect() {
         // בגלל שהקטנו את האויבים ל-40, הם כבר נכנסים במעברים של ה-50 בקלות
         // נשאיר רק מרווח ביטחון קטן מאוד של 2 פיקסלים
-        int margin = 2;
-        return new Rectangle(this.x + margin, this.y + margin, this.width - (margin * 2), this.height - (margin * 2));
+        return new Rectangle(this.x , this.y , this.width , this.height );
     }
 
     public void move() {
@@ -131,11 +130,11 @@ public class Enemy {
                 }
                 break;
         }
-        if (random.nextInt(100) == 0) {
+        if (random.nextInt(200) == 0) {
             this.direction = random.nextInt(1, 5);
         }
 
-        if (hitBoundary || random.nextInt(150) == 0) {
+        if (hitBoundary || random.nextInt(250) == 0) {
             reverseDirection();
         }
     }
@@ -164,9 +163,9 @@ public class Enemy {
                     }
                     break;
             }
-            if (random.nextInt(150) == 0) {
-                this.direction = random.nextInt(1, 5);
-            }
+//            if (random.nextInt(150) == 0) {
+//                this.direction = random.nextInt(1, 5);
+//            }
         }
     }
 

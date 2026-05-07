@@ -39,7 +39,7 @@ public class EnemyBroccoli extends Enemy {
             setDirection(RIGHT);
         }
 
-        if (hitBoundary || getRandom().nextInt(150) == 0) {
+        if (hitBoundary || getRandom().nextInt(250) == 0) {
             setDirection(getDirection() == RIGHT ? LEFT : RIGHT);
         }
     }

@@ -7,7 +7,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.util.Iterator;
-import java.awt.Rectangle;
 
 public class Player {
     private int x;
@@ -47,8 +46,6 @@ public class Player {
     private int gifOffsetX;
     private int gifOffsetY;
 
-    // ------------------------------
-
     public Player(int x, int y, int width, int height) {
         this.x = x;
         this.y = y;
@@ -68,7 +65,27 @@ public class Player {
         // קוראים לפונקציה שתחלץ את התמונות מה-GIF ישר לתוך המערך שבנינו
         loadGifFrames("/cupcake.gif");
     }
+    public int getX() {
+        return this.x;
+    }
 
+    public int getY() {
+        return this.y;
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+    public int getWidth(){
+        return this.width;
+    }
+    public int getHeight(){
+        return this.width;
+    }
     public void setIsMoving(boolean moving) {
         this.isMoving = moving;
     }
@@ -96,30 +113,32 @@ public class Player {
         this.gifOffsetX = (this.width - this.gifDrawWidth) / 2;
         this.gifOffsetY = (this.height - this.gifDrawHeight) / 2;
     }
-
+    int offsetRight = 48;
     public void moveRight() {
-        if (this.x + this.width < Main.WINDOW_WIDTH) {
+        if (this.x + this.width < Main.WINDOW_WIDTH-offsetRight) {
             this.x += 5;
         }
         this.currentImage = this.rightImage;
     }
-
+    int offsetLeft = 50;
     public void moveLeft() {
-        if (this.x > 0) {
+        if (this.x > offsetLeft) {
             this.x -= 5;
         }
         this.currentImage = this.leftImage;
     }
 
+    int offsetBottom = 50;
     public void moveDown() {
-        if (this.y + this.height < Main.WINDOW_HEIGHT - 40) {
+        if (this.y + this.height < Main.WINDOW_HEIGHT - offsetBottom) {
             this.y += 5;
         }
         this.currentImage = this.downImage;
     }
 
+    int offsetTop = 35;
     public void moveUp() {
-        if (this.y > 0) {
+        if (this.y > offsetTop) {
             this.y -= 5;
         }
         this.currentImage = this.upImage;
@@ -212,7 +231,8 @@ public class Player {
         }
     }
 
-    public Rectangle getBounds() {
-        return new Rectangle(x, y, width, height);
+    public Rectangle getRect(){
+        Rectangle rectangle = new Rectangle(this.x, this.y, this.width, this.height);
+        return rectangle;
     }
 }

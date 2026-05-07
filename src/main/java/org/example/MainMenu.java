@@ -6,7 +6,7 @@ import java.awt.*;
 public class MainMenu extends JFrame {
     private static final int BUTTON_WIDTH = 300;
     private static final int BUTTON_HEIGHT = 70;
-    private static final int START_BUTTON_Y = 210;
+    private static final int START_BUTTON_Y = 250;
     private static final int INSTRUCTIONS_BUTTON_Y = START_BUTTON_Y + 90;
     private static final int BUTTON_FONT_SIZE = 30;
 
@@ -20,6 +20,7 @@ public class MainMenu extends JFrame {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setResizable(false);
         this.setLocationRelativeTo(null);
+        this.setUndecorated(true);//פ[מבטל את הפס העליון של החלון
 
         Utils.initializeMusic(MUSIC_PATH);
 
@@ -56,11 +57,13 @@ public class MainMenu extends JFrame {
         this.dispose(); // סוגר את החלון של הבאקראונד
         JFrame window = new JFrame("Sugar Rush");
         window.setSize(Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT);
+        window.setUndecorated(true);
         window.setResizable(false);
         window.setLocationRelativeTo(null);
         window.setLayout(null);
         window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         window.add(new MainScenePanel(0, 0, Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT));
         window.setVisible(true);
+
     }
 }

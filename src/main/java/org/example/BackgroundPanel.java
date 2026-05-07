@@ -5,7 +5,7 @@ import java.awt.*;
 import java.net.URL;
 
 public class BackgroundPanel extends JPanel {
-    private static final String BACKGROUND_IMAGE_PATH = "/IMG-20260503-WA0034.jpg.jpeg";
+    private static final String BACKGROUND_IMAGE_PATH = "/background_menu.jpeg";
     private Image backgroundImage;
 
     public BackgroundPanel() {

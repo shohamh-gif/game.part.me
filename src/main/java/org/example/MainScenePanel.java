@@ -282,13 +282,13 @@ public class MainScenePanel extends JPanel {
     }
 
     public void checkPrizeCollisions() {
-        // "מגלחים" 15 פיקסלים מהשחקן כדי שייגע בסוכריה רק כשהוא ממש עליה פיזית
-        int pad = 15;
+        // --- השינוי שלך: "מגלחים" 15 פיקסלים מהשחקן כדי שייגע בסוכריה רק כשהוא ממש עליה פיזית ---
+        int padding = 15;
         Rectangle playerHitbox = new Rectangle(
-                player.getX() + pad,
-                player.getY() + pad,
-                player.getWidth() - (pad * 2),
-                player.getHeight() - (pad * 2)
+                player.getX() + padding,
+                player.getY() + padding,
+                player.getWidth() - (padding * 2),
+                player.getHeight() - (padding * 2)
         );
 
         boolean allCollected = true;
@@ -296,10 +296,15 @@ public class MainScenePanel extends JPanel {
         if (prizes != null) {
             for (int i = 0; i < prizes.length; i++) {
                 if (prizes[i] != null && !prizes[i].isCollected()) {
-                    // משתמשים במלבן המגולח שלנו לבדיקה!
+
+                    // משתמשים במלבן המגולח שלך לבדיקה
                     if (playerHitbox.intersects(prizes[i].getBounds())) {
                         prizes[i].setCollected(true);
                         this.score += 10;
+
+                        // --- השינוי של החבר: השמעת צליל בעת איסוף סוכריה ---
+                        playSound("/Sweet_Reward.wav");
+
                     } else {
                         allCollected = false;
                     }
@@ -307,6 +312,7 @@ public class MainScenePanel extends JPanel {
             }
         }
 
+        // --- לוגיקת סיום השלב (זהה אצל שניכם) ---
         if (allCollected && prizes != null && prizes.length > 0) {
             currentLevel++;
             if (currentLevel > MAX_LEVELS) {

@@ -5,6 +5,10 @@ import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.Random;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import java.net.URL;
 
 public class MainScenePanel extends JPanel {
     private Player player;
@@ -279,12 +283,12 @@ public class MainScenePanel extends JPanel {
 
     public void checkPrizeCollisions() {
         // "מגלחים" 15 פיקסלים מהשחקן כדי שייגע בסוכריה רק כשהוא ממש עליה פיזית
-        int padding = 10;
+        int pad = 15;
         Rectangle playerHitbox = new Rectangle(
-                player.getX() + padding,
-                player.getY() + padding,
-                player.getWidth() - (padding * 2),
-                player.getHeight() - (padding * 2)
+                player.getX() + pad,
+                player.getY() + pad,
+                player.getWidth() - (pad * 2),
+                player.getHeight() - (pad * 2)
         );
 
         boolean allCollected = true;
@@ -322,133 +326,109 @@ public class MainScenePanel extends JPanel {
         new Thread(() -> {
             while (true) {
                 if (!isPaused) {
-                    for (int i = 0; i < this.enemies.length; i++) {
-                        if (this.enemies[i] == null) continue;
-
-                        int oldX = this.enemies[i].getX();
-                        int oldY = this.enemies[i].getY();
-
-                        this.enemies[i].move();
-
-                        // בדיקה אם האויב נתקע בקיר או באויב אחר
-                        boolean hitSomething = checkEnemyCakeCollision(this.enemies[i]);
-                        if (!hitSomething) {
-                            for (int j = 0; j < this.enemies.length; j++) {
-                                if (i != j && this.enemies[j] != null && checkEnemyCollision(this.enemies[i], this.enemies[j])) {
-                                    hitSomething = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        // אם האויב נתקע - נחזיר אותו אחורה ונהפוך לו כיוון
-                        if (hitSomething) {
-                            this.enemies[i].setX(oldX);
-                            this.enemies[i].setY(oldY);
-                            this.enemies[i].reverseDirection();
-
-                            if (this.enemies[i] instanceof EnemyBellPepper) {
-                                ((EnemyBellPepper) this.enemies[i]).suspendTracking(40); // הגמבה תברח הצידה ל-40 פריימים
-                            }
-                        }
-
-                        // --- בדיקת פסילה: התנגשות בין השחקן לאויב ---
-                        if (checkCollision(this.player, this.enemies[i])) {
-
-                            // 1. הגדרת הכפתורים המותאמים אישית
-                            Object[] options = {"Restart Level", "Back to Menu"};
-
-                            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/BellPepper_Front.png"));
-
-                            Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
-                            ImageIcon pepperIcon = new ImageIcon(scaledImage);
-
-                            // 2. בניית התוכן של חלון הדיאלוג
-                            JOptionPane pane = new JOptionPane(
-                                    "אוי לא! נתפסת על ידי הירקות!\nהניקוד שלך: " + this.score,
-                                    JOptionPane.PLAIN_MESSAGE,
-                                    JOptionPane.YES_NO_OPTION,
-                                    pepperIcon,
-                                    options,
-                                    options[0] // כפתור ה-Restart יהיה מסומן כברירת מחדל
-                            );
-
-                            // 3. יצירת חלון אמיתי ונטרול ה-X!
-                            JDialog dialog = pane.createDialog(SwingUtilities.windowForComponent(this), "Game Over");
-                            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE); // הקסם שמבטל את ה-X
-                            dialog.setVisible(true); // מציג את החלון ועוצר את המשחק עד שתהיה תשובה
-
-                            // 4. בדיקה מה המשתמש בחר
-                            Object selectedValue = pane.getValue();
-
-                            if (selectedValue != null && selectedValue.equals(options[0])) {
-                                // בחרו ב- Restart Level
-                                this.score = 0; // מאפסים את הניקוד
-                                loadLevel(this.currentLevel); // טוענים מחדש את השלב הנוכחי!
-                                break; // קריטי: יוצאים מיד מלולאת האויבים כדי להתחיל מחדש
-                            } else {
-                                // בחרו ב- Back to Menu
-                                Window parentWindow = SwingUtilities.windowForComponent(this);
-                                if (parentWindow != null) {
-                                    parentWindow.dispose(); // סוגר את חלון המשחק לחלוטין
-                                }
-                                new MainMenu(); // פותח מחדש את התפריט הראשי
-                                return; // קריטי: מסיים את הלולאה האינסופית והורג את ה-Thread של המשחק!
-                            }
-                        }
-                    }
+                    // אם פונקציית העזר מחזירה false, אנחנו הורגים את ה-Thread!
+                    if (!updateEnemies()) return;
 
                     checkPrizeCollisions();
-                    timerCounter++;
-                    if (timerCounter >= 60) { // עברה בערך שנייה אחת
-                        timeLeft--; // מורידים שנייה מהטיימר
-                        timerCounter = 0; // מאפסים את המונה לשנייה הבאה
 
-                        // מה קורה כשנגמר הזמן? (פסילה)
-                        if (timeLeft <= 0) {
-                            Object[] options = {"Restart Level", "Back to Menu"};
-
-                            // 2. טעינת התמונה של הפלפל (שנה את שם הקובץ לשם האמיתי שיש לך בתיקייה)
-                            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/BellPepper_Front.png"));
-
-                            // 3. שינוי גודל התמונה כדי שתתאים יפה לחלון (גודל 60 על 60 פיקסלים)
-                            Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
-                            ImageIcon pepperIcon = new ImageIcon(scaledImage);
-
-                            // 4. בניית חלון הדיאלוג עם תמונת הפלפל!
-                            JOptionPane pane = new JOptionPane(
-                                    "אוי לא! הזמן אזל אנא נסה שנית \nהניקוד שלך: " + this.score,
-                                    JOptionPane.PLAIN_MESSAGE, // שינינו ל-PLAIN כדי למחוק את סמל האזהרה הצהוב
-                                    JOptionPane.YES_NO_OPTION,
-                                    pepperIcon, // <--- כאן החלפנו את ה-null במשתנה של התמונה שלנו!
-                                    options,
-                                    options[0]
-                            );
-
-                            JDialog dialog = pane.createDialog(SwingUtilities.windowForComponent(this), "Time's Up");
-                            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-                            dialog.setVisible(true);
-
-                            Object selectedValue = pane.getValue();
-
-                            if (selectedValue != null && selectedValue.equals(options[0])) {
-                                this.score = 0;
-                                loadLevel(this.currentLevel);
-                            } else {
-                                Window parentWindow = SwingUtilities.windowForComponent(this);
-                                if (parentWindow != null) {
-                                    parentWindow.dispose();
-                                }
-                                new MainMenu();
-                                return;
-                            }
-                        }
-                    } // סוף לוגיקת הטיימר// סוף התנאי של (!isPaused)
+                    if (!updateTimer()) return;
                 }
                 repaint();
                 Utils.sleep(16);
             }
         }).start();
+    }
+
+    private boolean updateEnemies() {
+        for (int i = 0; i < this.enemies.length; i++) {
+            if (this.enemies[i] == null) continue;
+
+            int oldX = this.enemies[i].getX();
+            int oldY = this.enemies[i].getY();
+
+            this.enemies[i].move();
+
+            // בדיקה אם האויב נתקע בקיר או באויב אחר
+            boolean hitSomething = checkEnemyCakeCollision(this.enemies[i]);
+            if (!hitSomething) {
+                for (int j = 0; j < this.enemies.length; j++) {
+                    if (i != j && this.enemies[j] != null && checkEnemyCollision(this.enemies[i], this.enemies[j])) {
+                        hitSomething = true;
+                        break;
+                    }
+                }
+            }
+
+            // אם האויב נתקע - נחזיר אותו אחורה ונהפוך לו כיוון
+            if (hitSomething) {
+                this.enemies[i].setX(oldX);
+                this.enemies[i].setY(oldY);
+                this.enemies[i].reverseDirection();
+
+                if (this.enemies[i] instanceof EnemyBellPepper) {
+                    ((EnemyBellPepper) this.enemies[i]).suspendTracking(40); // הגמבה תברח הצידה ל-40 פריימים
+                }
+            }
+
+            // --- בדיקת פסילה ---
+            if (checkCollision(this.player, this.enemies[i])) {
+                // קוראים לפונקציית ה-GameOver הכללית, והיא מחזירה אם להמשיך או לצאת
+                return handleGameOver("אוי לא! נתפסת על ידי הירקות!", "Game Over");
+            }
+        }
+        return true; // הכל תקין, אפשר להמשיך את הלולאה
+    }
+
+    private boolean updateTimer() {
+        timerCounter++;
+        if (timerCounter >= 60) { // עברה בערך שנייה אחת
+            timeLeft--; // מורידים שנייה מהטיימר
+            timerCounter = 0; // מאפסים את המונה לשנייה הבאה
+
+            // מה קורה כשנגמר הזמן?
+            if (timeLeft <= 0) {
+                return handleGameOver("אוי לא! הזמן אזל אנא נסה שנית.", "Time's Up");
+            }
+        }
+        return true; // יש עוד זמן, הכל תקין
+    }
+
+    private boolean handleGameOver(String message, String title) {
+        Object[] options = {"Restart Level", "Back to Menu"};
+
+        ImageIcon originalIcon = new ImageIcon(getClass().getResource("/BellPepper_Front.png"));
+        Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+        ImageIcon pepperIcon = new ImageIcon(scaledImage);
+
+        JOptionPane pane = new JOptionPane(
+                message + "\nהניקוד שלך: " + this.score,
+                JOptionPane.PLAIN_MESSAGE,
+                JOptionPane.YES_NO_OPTION,
+                pepperIcon,
+                options,
+                options[0]
+        );
+
+        JDialog dialog = pane.createDialog(SwingUtilities.windowForComponent(this), title);
+        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        dialog.setVisible(true);
+
+        Object selectedValue = pane.getValue();
+
+        if (selectedValue != null && selectedValue.equals(options[0])) {
+            // בחרו ב- Restart Level
+            this.score = 0;
+            loadLevel(this.currentLevel);
+            return true; // מבקשים מהלולאה להמשיך לרוץ (עם הרמה המאופסת)
+        } else {
+            // בחרו ב- Back to Menu
+            Window parentWindow = SwingUtilities.windowForComponent(this);
+            if (parentWindow != null) {
+                parentWindow.dispose();
+            }
+            new MainMenu();
+            return false; // ה-false הזה יגרום ללולאה להרוג את עצמה!
+        }
     }
 
 
@@ -475,7 +455,7 @@ public class MainScenePanel extends JPanel {
         }
 
         if (this.player != null) {
-            this.player.paint(graphics,this.isPaused);
+            this.player.paint(graphics, this.isPaused);
         }
 
         if (prizes != null) {
@@ -542,6 +522,27 @@ public class MainScenePanel extends JPanel {
             int y = getHeight() / 2;
 
             graphics.drawString(text, x, y);
+        }
+    }
+
+    // פונקציה זו טוענת קובץ סאונד מתיקיית המשאבים ומנגנת אותו
+    private void playSound(String soundFileName) {
+        try {
+            // חיפוש הקובץ בנתיב שציינו
+            URL soundURL = getClass().getResource(soundFileName);
+
+            if (soundURL != null) {
+                // פתיחת ערוץ שמע וניגון הקליפ
+                AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundURL);
+                Clip clip = AudioSystem.getClip();
+                clip.open(audioIn);
+                clip.start();
+            } else {
+                System.out.println("שגיאה: לא מצאתי את קובץ הסאונד " + soundFileName);
+            }
+        } catch (Exception e) {
+            System.out.println("שגיאה בניגון הסאונד:");
+            e.printStackTrace();
         }
     }
 }

@@ -24,18 +24,16 @@ public class EnemyBellPepper extends Enemy {
     @Override
     public void move() {
         if (!isMoving() || this.targetPlayer == null) return;
-
-        // אם הגמבה במצב "מבולבל" בגלל שנתקעה בקיר, היא פשוט ממשיכה ללכת בכיוון שהפנו אותה
+// אם הגמבה נתקעה בקיר, זה עושה שלא תזוז לכיוון שהפנו אותה
         if (confusedTimer > 0) {
             confusedTimer--;
             if (getDirection() == RIGHT && !isAtRightBoundary()) moveHorizontally(1);
             else if (getDirection() == LEFT && !isAtLeftBoundary()) moveHorizontally(-1);
             else if (getDirection() == UP && !isAtTopBoundary()) moveVertically(-1);
             else if (getDirection() == DOWN && !isAtBottomBoundary()) moveVertically(1);
-            return; // מונע ממנה לחשב מסלול לשחקן כרגע!
+            return;
         }
-
-        // --- הלוגיקה הרגילה (מעקב אחרי השחקן) ---
+        // חישוב מרחקים אנכי ואופקי בין הגמבה לשחקן
         int diffX = this.targetPlayer.getX() - this.getX();
         int diffY = this.targetPlayer.getY() - this.getY();
 

@@ -143,33 +143,6 @@ public class Enemy {
         }
     }
 
-    public void addSpeed(int speed) {
-        if (isMoving) {
-            switch (this.direction) {
-                case RIGHT:
-                    if (this.x + this.width + speed < Main.WINDOW_WIDTH - this.offsetRight) {
-                        this.x += speed;
-                    }
-                    break;
-                case LEFT:
-                    if (this.x - speed > this.offsetLeft) {
-                        this.x -= speed;
-                    }
-                    break;
-                case UP:
-                    if (this.y - speed < this.offsetTop) {
-                        this.y -= speed;
-                    }
-                    break;
-                case DOWN:
-                    if (this.y + this.height + speed < Main.WINDOW_HEIGHT - this.offsetBottom) {
-                        this.y += speed;
-                    }
-                    break;
-            }
-        }
-    }
-
     public void reverseDirection() {
         switch (this.direction) {
             case RIGHT:

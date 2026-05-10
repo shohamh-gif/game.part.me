@@ -20,6 +20,7 @@ public class MainScenePanel extends JPanel {
     private int cakesCount;
     private final int CAKE_SIZE = 50;
     private LevelsBackground levelsBackground;
+    private JButton soundButton;
 
     private int currentLevel = 1;
     private final int MAX_LEVELS = 9;
@@ -70,8 +71,8 @@ public class MainScenePanel extends JPanel {
         MovementListener movementListener = new MovementListener(this, this.player);
         this.addKeyListener(movementListener);
 
-        JButton soundButton = Utils.createSoundButton();
-        this.add(soundButton);
+        this.soundButton = Utils.createSoundButton();
+        this.add(this.soundButton);
 
         RoundedButton backButton = RoundedButton.createBackButton(width - 135, 12, this);
         this.add(backButton);
@@ -100,22 +101,18 @@ public class MainScenePanel extends JPanel {
 
         int difficultyTier = (level - 1) / 3;
         int mazeTemplate = (level - 1) % 3;
+
         int amountOfCandies = 5 + (difficultyTier * 3);
-
-        // חישוב סך כל האויבים שאמורים להיות בשלב הזה
-        int totalEnemies = 3 + (difficultyTier * 2);
-
-        //  אם אנחנו בשלבים הראשונים, אפס גמבות, אחר כך גמבה אחת
-        int smartEnemies = (difficultyTier > 0) ? 1 : 0;
-
-        // כל שאר האויבים שחסרים יהפכו אוטומטית לירקות רגילים
-        int normalEnemies = totalEnemies - smartEnemies;
+        // תמיד לפחות 3 ירקות רגילים!
+        int normalEnemies = 3 + difficultyTier;
+        int smartEnemies = difficultyTier;
 
         MazeBuilder mazeBuilder = new MazeBuilder();
         // מעבירים גם את הקושי לבונה המבוכים
         this.cakes = mazeBuilder.buildMaze(mazeTemplate, Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT, difficultyTier);
         this.cakesCount = mazeBuilder.getCakesCount();
-        spawnPrizes(amountOfCandies); // כמות הסוכריות בשלב
+
+        spawnPrizes(amountOfCandies);
 
         // שולחים למחלקת האויבים גם את התבנית כדי שידעו איפה לחסום
         setupEnemiesForLevel(normalEnemies, smartEnemies, mazeTemplate);
@@ -133,38 +130,38 @@ public class MainScenePanel extends JPanel {
     private void setupEnemiesForLevel(int normalEnemies, int smartEnemies, int mazeTemplate) {
         int totalEnemies = normalEnemies + smartEnemies;
         this.enemies = new Enemy[totalEnemies];
+        Random random = new Random();
 
-        int[] spawnX = {300, 500, 700, 900, 1100, 1300};
-        int[] spawnY = {300, 300, 300, 500, 500, 500};
+        int cols = Main.WINDOW_WIDTH / CAKE_SIZE;
+        int rows = Main.WINDOW_HEIGHT / CAKE_SIZE;
 
-        int enemyIndex = 0;
+        for (int i = 0; i < totalEnemies; i++) {
+            int x, y;
 
-        for (int i = 0; i < normalEnemies; i++) {
-            int currentX = spawnX[enemyIndex % spawnX.length];
-            int currentY = spawnY[enemyIndex % spawnY.length];
+            // מגרילים מיקומים שוב ושוב עד שהרדאר שלנו מאשר שהמשבצת פנויה
+            do {
+                // מגרילים "משבצת" במבוך (נמנעים מהקצוות הקיצוניים של המסך)
+                int gridX = random.nextInt(cols - 2) + 1;
+                int gridY = random.nextInt(rows - 2) + 1;
 
-            int enemySize = 46;
-            int type = i % 4;
-            if (type == 0) {
-                this.enemies[enemyIndex] = new EnemyBroccoli(currentX, currentY, enemySize, enemySize);
-            } else if (type == 1) {
-                this.enemies[enemyIndex] = new EnemyEggplant(currentX, currentY, enemySize, enemySize);
-            } else if (type == 2) {
-                this.enemies[enemyIndex] = new EnemyGeneric(currentX, currentY, enemySize, enemySize, "Carrot");
+                // ממירים את המשבצת לפיקסלים במסך
+                // (הוספנו +2 כדי למרכז אויב של 46x46 בתוך משבצת של 50x50)
+                x = (gridX * CAKE_SIZE) + 2;
+                y = (gridY * CAKE_SIZE) + 2;
+
+            } while (!isValidEnemyLocation(x, y));
+
+            // עכשיו כשיש לנו X ו-Y בטוחים, נייצר את האויב!
+            if (i < normalEnemies) {
+                int type = i % 4;
+                if (type == 0) this.enemies[i] = new EnemyBroccoli(x, y, 46, 46);
+                else if (type == 1) this.enemies[i] = new EnemyEggplant(x, y, 46, 46);
+                else if (type == 2) this.enemies[i] = new EnemyGeneric(x, y, 46, 46, "Carrot");
+                else this.enemies[i] = new EnemyGeneric(x, y, 46, 46, "Corn");
             } else {
-                this.enemies[enemyIndex] = new EnemyGeneric(currentX, currentY, enemySize, enemySize, "Corn");
+                // הגמבה החכמה נוצרת אחרונה
+                this.enemies[i] = new EnemyBellPepper(x, y, 46, 46, this.player);
             }
-            enemyIndex++;
-        }
-
-        for (int i = 0; i < smartEnemies; i++) {
-            int currentX = spawnX[enemyIndex % spawnX.length];
-            int currentY = spawnY[enemyIndex % spawnY.length];
-
-            this.enemies[enemyIndex] =
-                    new EnemyBellPepper(currentX, currentY, 46, 46, this.player);
-
-            enemyIndex++;
         }
     }
 
@@ -208,6 +205,35 @@ public class MainScenePanel extends JPanel {
             }
         }
         return true;
+    }
+
+    // פונקציית רדאר: מוודאת שהאויב לא ייווצר על קיר, על השחקן, או על ירק אחר!
+    private boolean isValidEnemyLocation(int x, int y) {
+        Rectangle enemyRect = new Rectangle(x, y, 46, 46);
+
+        // 1. האם המיקום נופל על עוגה (קיר)?
+        for (int i = 0; i < this.cakesCount; i++) {
+            if (this.cakes[i] != null && enemyRect.intersects(this.cakes[i].getRect())) {
+                return false; // פסול - יש פה עוגה!
+            }
+        }
+
+        // 2. האם המיקום קרוב מדי לשחקן? (ניצור אזור בטוח ענק של 200x200 פיקסלים סביב ההתחלה)
+        Rectangle safeZone = new Rectangle(50, 50, 200, 200);
+        if (enemyRect.intersects(safeZone)) {
+            return false; // פסול - קרוב מדי לשחקן!
+        }
+
+        // 3. --- התיקון החדש: האם המיקום נופל על אויב שכבר הוגרל לפניו? ---
+        if (this.enemies != null) {
+            for (int i = 0; i < this.enemies.length; i++) {
+                if (this.enemies[i] != null && enemyRect.intersects(this.enemies[i].getRect())) {
+                    return false; // פסול - יש פה כבר ירק אחר!
+                }
+            }
+        }
+
+        return true; // המיקום נקי, בטוח ומוכן לשימוש
     }
 
     public boolean checkCakeCollision() {
@@ -319,11 +345,14 @@ public class MainScenePanel extends JPanel {
         if (allCollected && prizes != null && prizes.length > 0) {
             currentLevel++;
             if (currentLevel > MAX_LEVELS) {
+                Utils.stopMusic();
+                playSound("/Victory_sound.wav");
+
                 ImageIcon originalIcon = new ImageIcon(getClass().getResource("/Trophy_Icon.png"));
                 Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
                 ImageIcon TrophyIcon = new ImageIcon(scaledImage);
 
-                JOptionPane.showMessageDialog(null, "ניצחת במשחק! כל הכבוד!", "Victory", JOptionPane.PLAIN_MESSAGE, TrophyIcon);
+                JOptionPane.showMessageDialog(null,  "ניצחת במשחק! כל הכבוד!" + "\nהניקוד שלך: " + this.score, "Victory", JOptionPane.PLAIN_MESSAGE, TrophyIcon);
                 System.exit(0);
             } else {
                 loadLevel(currentLevel);
@@ -396,6 +425,12 @@ public class MainScenePanel extends JPanel {
 
             // מה קורה כשנגמר הזמן?
             if (timeLeft <= 0) {
+                timeLeft = 0; // מוודאים שהזמן לא יורד בטעות מתחת לאפס
+
+                // --- התיקון שלנו: כופים על המסך להתרענן מיד כדי שהשחקן יראה 00:00 ---
+                repaint();
+                // -------------------------------------------------------------------
+
                 return handleGameOver("אוי לא! הזמן אזל אנא נסה שנית.", "Time's Up");
             }
         }
@@ -403,6 +438,11 @@ public class MainScenePanel extends JPanel {
     }
 
     private boolean handleGameOver(String message, String title) {
+        Utils.stopMusic();
+        // --- כאן אנחנו מנגנים את צליל ההפסד מיד כשמופעלת הפסילה ---
+        playSound("/Losing_sound.wav");
+        // -----------------------------------------------------------
+
         Object[] options = {"Restart Level", "Back to Menu"};
 
         ImageIcon originalIcon = new ImageIcon(getClass().getResource("/BellPepper_Front.png"));
@@ -419,30 +459,33 @@ public class MainScenePanel extends JPanel {
         );
 
         JDialog dialog = pane.createDialog(SwingUtilities.windowForComponent(this), title);
-
-        // --- שתי השורות שמעלימות את האיקס לחלוטין ---
-        dialog.setUndecorated(true); // מבטל את הפס העליון של החלון!
-        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE); // ליתר ביטחון
-
+        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
         dialog.setVisible(true);
 
         Object selectedValue = pane.getValue();
 
         if (selectedValue != null && selectedValue.equals(options[0])) {
-            // בחרו ב- Restart Level
+            // --- לחצו על Restart Level ---
             this.score = 0;
             loadLevel(this.currentLevel);
-            return true; // מבקשים מהלולאה להמשיך לרוץ
+
+            Utils.playMusic(); // 1. מפעילים את המוזיקה הכללית
+            Utils.syncButtonIcon(this.soundButton); // 2. מעדכנים את תמונת הרמקול שעל המסך
+
+            return true;
         } else {
-            // בחרו ב- Back to Menu
+            // --- לחצו על Back to Menu ---
+            Utils.playMusic(); // מפעילים את המוזיקה לפני המעבר כדי שתמשיך לתפריט
+
             Window parentWindow = SwingUtilities.windowForComponent(this);
             if (parentWindow != null) {
                 parentWindow.dispose();
             }
-            new MainMenu();
-            return false; // הורגים את הלולאה
+            new MainMenu(); // התפריט ייפתח ויטען את הכפתור כשהוא כבר מסונכרן ודלוק
+            return false;
         }
     }
+
 
     @Override
     public void paintComponent(Graphics graphics) {

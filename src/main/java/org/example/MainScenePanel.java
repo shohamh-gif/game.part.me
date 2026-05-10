@@ -2,6 +2,8 @@ package org.example;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.util.Random;
 
 public class MainScenePanel extends JPanel {
@@ -18,6 +20,13 @@ public class MainScenePanel extends JPanel {
     private int currentLevel = 1;
     private final int MAX_LEVELS = 9;
 
+    private boolean isPaused = false;
+    private boolean isLevelStarting = true;
+
+    // --- משתני טיימר ---
+    private int timeLeft = 60; // כמות השניות הכוללת (דקה)
+    private int timerCounter = 0; // מונה שסופר את הריצות של הלולאה
+
     public MainScenePanel(int x, int y, int width, int height) {
         this.candyImages = new String[]{
                 "/Blue_candy.png",
@@ -32,6 +41,24 @@ public class MainScenePanel extends JPanel {
 
         this.setFocusable(true);
         this.requestFocus();
+
+        this.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                    if (isLevelStarting) {
+                        // אם אנחנו במסך ההמתנה של תחילת השלב, נשחרר את העצירה ונתחיל לשחק!
+                        isLevelStarting = false;
+                        isPaused = false;
+                    } else {
+                        // אם אנחנו במהלך משחק רגיל, נעשה עצירה רגילה או נחזור ממנה
+                        isPaused = !isPaused;
+                    }
+                    repaint(); // ציור מחדש
+                }
+            }
+        });
+
         this.setDoubleBuffered(true);
 
         loadLevel(currentLevel);
@@ -42,22 +69,24 @@ public class MainScenePanel extends JPanel {
         JButton soundButton = Utils.createSoundButton();
         this.add(soundButton);
 
-        RoundedButton exitButton = new RoundedButton("Exit", 20);
-        exitButton.setBounds(width - 65, 15, 60, 30);
-        exitButton.setBackground(new Color(255, 100, 100));
-        exitButton.setForeground(Color.WHITE);
-        exitButton.setFont(new Font("Arial", Font.BOLD, 12));
-        exitButton.setBorderPainted(false);
-        exitButton.setFocusable(false);
-        exitButton.addActionListener(e -> {
-            System.exit(0);
-        });
+        RoundedButton backButton = RoundedButton.createBackButton(width - 135, 12, this);
+        this.add(backButton);
+
+        RoundedButton exitButton = RoundedButton.createExitButton(width - 80, 12);
         this.add(exitButton);
 
         this.gameLoop();
     }
 
+    public boolean isPaused() {
+        return isPaused;
+    }
+
     private void loadLevel(int level) {
+        // איפוס הטיימר ל-60 שניות בכל טעינת שלב
+        this.timeLeft = 60;
+        this.timerCounter = 0;
+
         if (this.player == null) {
             this.player = new Player(100, 100, 60, 60);
         } else {
@@ -88,18 +117,17 @@ public class MainScenePanel extends JPanel {
                 this.enemies[i].setIsMoving(true);
             }
         }
+
+        this.isPaused = true;
+        this.isLevelStarting = true;
     }
 
     private void setupEnemiesForLevel(int normalEnemies, int smartEnemies, int mazeTemplate) {
         int totalEnemies = normalEnemies + smartEnemies;
         this.enemies = new Enemy[totalEnemies];
 
-        int cols = Main.WINDOW_WIDTH / CAKE_SIZE;
-        int rows = Main.WINDOW_HEIGHT / CAKE_SIZE;
-
-        // נקודות ספאון אסטרטגיות שתמיד פתוחות (פינות רחוקות ומרכזים)
-        int[] spawnX = {(cols - 3) * 50, 400, (cols - 5) * 50, 150, 500, 200};
-        int[] spawnY = {(rows - 3) * 50, (rows - 5) * 50, 300, 500, 150, 450};
+        int[] spawnX = {300, 500, 700, 900, 1100, 1300};
+        int[] spawnY = {300, 300, 300, 500, 500, 500};
 
         int enemyIndex = 0;
 
@@ -107,12 +135,17 @@ public class MainScenePanel extends JPanel {
             int currentX = spawnX[enemyIndex % spawnX.length];
             int currentY = spawnY[enemyIndex % spawnY.length];
 
-            // מחלקים את האויבים בין ברוקולי, חציל, גזר ותירס לפי השארית
             int type = i % 4;
-            if (type == 0) this.enemies[enemyIndex] = new EnemyBroccoli(currentX, currentY, 46, 46);
-            else if (type == 1) this.enemies[enemyIndex] = new EnemyEggplant(currentX, currentY, 46, 46);
-            else if (type == 2) this.enemies[enemyIndex] = new EnemyCarrot(currentX, currentY, 46, 46);
-            else this.enemies[enemyIndex] = new EnemyCorn(currentX, currentY, 46, 46);
+
+            if (type == 0) {
+                this.enemies[enemyIndex] = new EnemyBroccoli(currentX, currentY, 46, 46);
+            } else if (type == 1) {
+                this.enemies[enemyIndex] = new EnemyEggplant(currentX, currentY, 46, 46);
+            } else if (type == 2) {
+                this.enemies[enemyIndex] = new EnemyCarrot(currentX, currentY, 46, 46);
+            } else {
+                this.enemies[enemyIndex] = new EnemyCorn(currentX, currentY, 46, 46);
+            }
 
             enemyIndex++;
         }
@@ -120,7 +153,10 @@ public class MainScenePanel extends JPanel {
         for (int i = 0; i < smartEnemies; i++) {
             int currentX = spawnX[enemyIndex % spawnX.length];
             int currentY = spawnY[enemyIndex % spawnY.length];
-            this.enemies[enemyIndex] = new EnemyBellPepper(currentX, currentY, 46, 46, this.player);
+
+            this.enemies[enemyIndex] =
+                    new EnemyBellPepper(currentX, currentY, 46, 46, this.player);
+
             enemyIndex++;
         }
     }
@@ -242,13 +278,22 @@ public class MainScenePanel extends JPanel {
     }
 
     public void checkPrizeCollisions() {
-        Rectangle playerRect = player.getRect();
+        // "מגלחים" 15 פיקסלים מהשחקן כדי שייגע בסוכריה רק כשהוא ממש עליה פיזית
+        int padding = 10;
+        Rectangle playerHitbox = new Rectangle(
+                player.getX() + padding,
+                player.getY() + padding,
+                player.getWidth() - (padding * 2),
+                player.getHeight() - (padding * 2)
+        );
+
         boolean allCollected = true;
 
         if (prizes != null) {
             for (int i = 0; i < prizes.length; i++) {
                 if (prizes[i] != null && !prizes[i].isCollected()) {
-                    if (playerRect.intersects(prizes[i].getBounds())) {
+                    // משתמשים במלבן המגולח שלנו לבדיקה!
+                    if (playerHitbox.intersects(prizes[i].getBounds())) {
                         prizes[i].setCollected(true);
                         this.score += 10;
                     } else {
@@ -261,7 +306,11 @@ public class MainScenePanel extends JPanel {
         if (allCollected && prizes != null && prizes.length > 0) {
             currentLevel++;
             if (currentLevel > MAX_LEVELS) {
-                JOptionPane.showMessageDialog(null, "ניצחת במשחק! כל הכבוד!", "Victory", JOptionPane.INFORMATION_MESSAGE);
+                ImageIcon originalIcon = new ImageIcon(getClass().getResource("/Trophy_Icon.png"));
+                Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+                ImageIcon TrophyIcon = new ImageIcon(scaledImage);
+
+                JOptionPane.showMessageDialog(null, "ניצחת במשחק! כל הכבוד!", "Victory", JOptionPane.PLAIN_MESSAGE, TrophyIcon);
                 System.exit(0);
             } else {
                 loadLevel(currentLevel);
@@ -272,79 +321,136 @@ public class MainScenePanel extends JPanel {
     public void gameLoop() {
         new Thread(() -> {
             while (true) {
-                for (int i = 0; i < this.enemies.length; i++) {
-                    if (this.enemies[i] == null) continue;
+                if (!isPaused) {
+                    for (int i = 0; i < this.enemies.length; i++) {
+                        if (this.enemies[i] == null) continue;
 
-                    int oldX = this.enemies[i].getX();
-                    int oldY = this.enemies[i].getY();
+                        int oldX = this.enemies[i].getX();
+                        int oldY = this.enemies[i].getY();
 
-                    this.enemies[i].move();
+                        this.enemies[i].move();
 
-                    // בדיקה אם האויב נתקע בקיר או באויב אחר
-                    boolean hitSomething = checkEnemyCakeCollision(this.enemies[i]);
-                    if (!hitSomething) {
-                        for (int j = 0; j < this.enemies.length; j++) {
-                            if (i != j && this.enemies[j] != null && checkEnemyCollision(this.enemies[i], this.enemies[j])) {
-                                hitSomething = true;
-                                break;
+                        // בדיקה אם האויב נתקע בקיר או באויב אחר
+                        boolean hitSomething = checkEnemyCakeCollision(this.enemies[i]);
+                        if (!hitSomething) {
+                            for (int j = 0; j < this.enemies.length; j++) {
+                                if (i != j && this.enemies[j] != null && checkEnemyCollision(this.enemies[i], this.enemies[j])) {
+                                    hitSomething = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // אם האויב נתקע - נחזיר אותו אחורה ונהפוך לו כיוון
+                        if (hitSomething) {
+                            this.enemies[i].setX(oldX);
+                            this.enemies[i].setY(oldY);
+                            this.enemies[i].reverseDirection();
+
+                            if (this.enemies[i] instanceof EnemyBellPepper) {
+                                ((EnemyBellPepper) this.enemies[i]).suspendTracking(40); // הגמבה תברח הצידה ל-40 פריימים
+                            }
+                        }
+
+                        // --- בדיקת פסילה: התנגשות בין השחקן לאויב ---
+                        if (checkCollision(this.player, this.enemies[i])) {
+
+                            // 1. הגדרת הכפתורים המותאמים אישית
+                            Object[] options = {"Restart Level", "Back to Menu"};
+
+                            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/BellPepper_Front.png"));
+
+                            Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+                            ImageIcon pepperIcon = new ImageIcon(scaledImage);
+
+                            // 2. בניית התוכן של חלון הדיאלוג
+                            JOptionPane pane = new JOptionPane(
+                                    "אוי לא! נתפסת על ידי הירקות!\nהניקוד שלך: " + this.score,
+                                    JOptionPane.PLAIN_MESSAGE,
+                                    JOptionPane.YES_NO_OPTION,
+                                    pepperIcon,
+                                    options,
+                                    options[0] // כפתור ה-Restart יהיה מסומן כברירת מחדל
+                            );
+
+                            // 3. יצירת חלון אמיתי ונטרול ה-X!
+                            JDialog dialog = pane.createDialog(SwingUtilities.windowForComponent(this), "Game Over");
+                            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE); // הקסם שמבטל את ה-X
+                            dialog.setVisible(true); // מציג את החלון ועוצר את המשחק עד שתהיה תשובה
+
+                            // 4. בדיקה מה המשתמש בחר
+                            Object selectedValue = pane.getValue();
+
+                            if (selectedValue != null && selectedValue.equals(options[0])) {
+                                // בחרו ב- Restart Level
+                                this.score = 0; // מאפסים את הניקוד
+                                loadLevel(this.currentLevel); // טוענים מחדש את השלב הנוכחי!
+                                break; // קריטי: יוצאים מיד מלולאת האויבים כדי להתחיל מחדש
+                            } else {
+                                // בחרו ב- Back to Menu
+                                Window parentWindow = SwingUtilities.windowForComponent(this);
+                                if (parentWindow != null) {
+                                    parentWindow.dispose(); // סוגר את חלון המשחק לחלוטין
+                                }
+                                new MainMenu(); // פותח מחדש את התפריט הראשי
+                                return; // קריטי: מסיים את הלולאה האינסופית והורג את ה-Thread של המשחק!
                             }
                         }
                     }
 
-                    // אם האויב נתקע - נחזיר אותו אחורה ונהפוך לו כיוון
-                    if (hitSomething) {
-                        this.enemies[i].setX(oldX);
-                        this.enemies[i].setY(oldY);
-                        this.enemies[i].reverseDirection();
-                    }
+                    checkPrizeCollisions();
+                    timerCounter++;
+                    if (timerCounter >= 60) { // עברה בערך שנייה אחת
+                        timeLeft--; // מורידים שנייה מהטיימר
+                        timerCounter = 0; // מאפסים את המונה לשנייה הבאה
 
-                    // --- בדיקת פסילה: התנגשות בין השחקן לאויב ---
-                    if (checkCollision(this.player, this.enemies[i])) {
+                        // מה קורה כשנגמר הזמן? (פסילה)
+                        if (timeLeft <= 0) {
+                            Object[] options = {"Restart Level", "Back to Menu"};
 
-                        // 1. הגדרת הכפתורים המותאמים אישית
-                        Object[] options = {"Restart Level", "Back to Menu"};
+                            // 2. טעינת התמונה של הפלפל (שנה את שם הקובץ לשם האמיתי שיש לך בתיקייה)
+                            ImageIcon originalIcon = new ImageIcon(getClass().getResource("/BellPepper_Front.png"));
 
-                        // 2. בניית התוכן של חלון הדיאלוג
-                        JOptionPane pane = new JOptionPane(
-                                "אוי לא! נתפסת על ידי הירקות!\nהניקוד שלך: " + this.score,
-                                JOptionPane.WARNING_MESSAGE,
-                                JOptionPane.YES_NO_OPTION,
-                                null,
-                                options,
-                                options[0] // כפתור ה-Restart יהיה מסומן כברירת מחדל
-                        );
+                            // 3. שינוי גודל התמונה כדי שתתאים יפה לחלון (גודל 60 על 60 פיקסלים)
+                            Image scaledImage = originalIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+                            ImageIcon pepperIcon = new ImageIcon(scaledImage);
 
-                        // 3. יצירת חלון אמיתי ונטרול ה-X!
-                        JDialog dialog = pane.createDialog(SwingUtilities.windowForComponent(this), "Game Over");
-                        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE); // הקסם שמבטל את ה-X
-                        dialog.setVisible(true); // מציג את החלון ועוצר את המשחק עד שתהיה תשובה
+                            // 4. בניית חלון הדיאלוג עם תמונת הפלפל!
+                            JOptionPane pane = new JOptionPane(
+                                    "אוי לא! הזמן אזל אנא נסה שנית \nהניקוד שלך: " + this.score,
+                                    JOptionPane.PLAIN_MESSAGE, // שינינו ל-PLAIN כדי למחוק את סמל האזהרה הצהוב
+                                    JOptionPane.YES_NO_OPTION,
+                                    pepperIcon, // <--- כאן החלפנו את ה-null במשתנה של התמונה שלנו!
+                                    options,
+                                    options[0]
+                            );
 
-                        // 4. בדיקה מה המשתמש בחר
-                        Object selectedValue = pane.getValue();
+                            JDialog dialog = pane.createDialog(SwingUtilities.windowForComponent(this), "Time's Up");
+                            dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+                            dialog.setVisible(true);
 
-                        if (selectedValue != null && selectedValue.equals(options[0])) {
-                            // בחרו ב- Restart Level
-                            this.score = 0; // מאפסים את הניקוד
-                            loadLevel(this.currentLevel); // טוענים מחדש את השלב הנוכחי!
-                            break; // קריטי: יוצאים מיד מלולאת האויבים כדי להתחיל מחדש
-                        } else {
-                            // בחרו ב- Back to Menu
-                            Window parentWindow = SwingUtilities.windowForComponent(this);
-                            if (parentWindow != null) {
-                                parentWindow.dispose(); // סוגר את חלון המשחק לחלוטין
+                            Object selectedValue = pane.getValue();
+
+                            if (selectedValue != null && selectedValue.equals(options[0])) {
+                                this.score = 0;
+                                loadLevel(this.currentLevel);
+                            } else {
+                                Window parentWindow = SwingUtilities.windowForComponent(this);
+                                if (parentWindow != null) {
+                                    parentWindow.dispose();
+                                }
+                                new MainMenu();
+                                return;
                             }
-                            new MainMenu(); // פותח מחדש את התפריט הראשי
-                            return; // קריטי: מסיים את הלולאה האינסופית והורג את ה-Thread של המשחק!
                         }
-                    }
+                    } // סוף לוגיקת הטיימר// סוף התנאי של (!isPaused)
                 }
-
-                checkPrizeCollisions();
                 repaint();
                 Utils.sleep(16);
             }
         }).start();
     }
+
 
     @Override
     public void paintComponent(Graphics graphics) {
@@ -369,7 +475,7 @@ public class MainScenePanel extends JPanel {
         }
 
         if (this.player != null) {
-            this.player.paint(graphics);
+            this.player.paint(graphics,this.isPaused);
         }
 
         if (prizes != null) {
@@ -396,5 +502,46 @@ public class MainScenePanel extends JPanel {
         graphics.drawString("Level: " + this.currentLevel, scoreX + 202, scoreY + 2);
         graphics.setColor(new Color(255, 180, 193));
         graphics.drawString("Level: " + this.currentLevel, scoreX + 200, scoreY);
+
+        // --- ציור הטיימר ---
+        // חישוב דקות ושניות כדי להציג בפורמט של 01:30
+        int minutes = this.timeLeft / 60;
+        int seconds = this.timeLeft % 60;
+        // String.format מאפשר לנו להוסיף אפס מוביל אם המספר קטן מ-10
+        String timeString = String.format("Time: %02d:%02d", minutes, seconds);
+
+        graphics.setColor(Color.BLACK);
+        graphics.drawString(timeString, scoreX + 402, scoreY + 2);
+
+        // נשנה את הצבע לאדום כשנשארות 10 שניות או פחות כדי להלחיץ את השחקן!
+        if (this.timeLeft <= 10) {
+            graphics.setColor(Color.RED);
+        } else {
+            graphics.setColor(Color.WHITE);
+        }
+        graphics.drawString(timeString, scoreX + 400, scoreY);
+
+        if (isPaused) {
+            graphics.setColor(new Color(0, 0, 0, 200));
+            graphics.fillRect(0, 0, getWidth(), getHeight());
+
+            graphics.setColor(Color.WHITE);
+
+            String text;
+            if (isLevelStarting) {
+                // אם זה תחילת שלב
+                graphics.setFont(new Font("Arial", Font.BOLD, 40));
+                text = "PRESS SPACE TO START";
+            } else {
+                // אם זו עצירה רגילה
+                graphics.setFont(new Font("Arial", Font.BOLD, 60));
+                text = "PAUSED";
+            }
+
+            int x = (getWidth() - graphics.getFontMetrics().stringWidth(text)) / 2;
+            int y = getHeight() / 2;
+
+            graphics.drawString(text, x, y);
+        }
     }
 }

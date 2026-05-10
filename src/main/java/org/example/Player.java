@@ -9,6 +9,11 @@ import java.io.InputStream;
 import java.util.Iterator;
 
 public class Player {
+    private static final int RIGHT = 1;
+    private static final int LEFT = 2;
+    private static final int UP = 3;
+    private static final int DOWN = 4;
+
     private int x;
     private int y;
     private int width;
@@ -33,6 +38,8 @@ public class Player {
     // קובע את קצב ההחלפה - כמה זמן נחכה עד שנעבור לתא הבא במערך (אפשר לשנות את המספר כדי להאיץ/להאט)
     private int animationSpeed = 2;
 
+    private boolean wasShowingGif = false;
+
     private boolean isMoving = false;
 
     // מקדם הגדלה: מגדיר פי כמה נרצה להגדיל את התמונה של הגיף כדי שתיראה טוב יותר על המסך
@@ -46,11 +53,18 @@ public class Player {
     private int gifOffsetX;
     private int gifOffsetY;
 
+    private long lastMoveTime;
+
+    private int lastDirection = DOWN;
+
+
     public Player(int x, int y, int width, int height) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+
+
 
         // קוראים לפונקציה שמחשבת את הגודל של הגיף כבר בתחילת המשחק
         updateGifDimensions();
@@ -61,7 +75,7 @@ public class Player {
         this.leftImage = loadImage("/Left_no background.png");
 
         this.currentImage = this.downImage;
-
+        this.lastMoveTime = System.currentTimeMillis();
         // קוראים לפונקציה שתחלץ את התמונות מה-GIF ישר לתוך המערך שבנינו
         loadGifFrames("/cupcake.gif");
     }
@@ -84,10 +98,13 @@ public class Player {
         return this.width;
     }
     public int getHeight(){
-        return this.width;
+        return this.height;
     }
     public void setIsMoving(boolean moving) {
         this.isMoving = moving;
+    }
+    public void updateLastMoveTime() {
+        this.lastMoveTime = System.currentTimeMillis();
     }
 
     private Image loadImage(String imagePath) {
@@ -113,37 +130,70 @@ public class Player {
         this.gifOffsetX = (this.width - this.gifDrawWidth) / 2;
         this.gifOffsetY = (this.height - this.gifDrawHeight) / 2;
     }
+
+
+    private int getMovementSpeed(int newDirection) {
+
+        this.lastMoveTime = System.currentTimeMillis();
+
+        int speed = 5;
+
+        if (this.lastDirection != newDirection) {
+            speed = 8;
+        }
+
+        this.lastDirection = newDirection;
+
+        return speed;
+    }
+
     int offsetRight = 48;
     public void moveRight() {
-        if (this.x + this.width < Main.WINDOW_WIDTH-offsetRight) {
-            this.x += 5;
+
+        int speed = getMovementSpeed(RIGHT);
+
+        if (this.x + this.width < Main.WINDOW_WIDTH - offsetRight) {
+            this.x += speed;
         }
+
         this.currentImage = this.rightImage;
     }
+
     int offsetLeft = 50;
     public void moveLeft() {
+
+        int speed = getMovementSpeed(LEFT);
+
         if (this.x > offsetLeft) {
-            this.x -= 5;
+            this.x -= speed;
         }
+
         this.currentImage = this.leftImage;
     }
 
     int offsetBottom = 50;
     public void moveDown() {
+
+        int speed = getMovementSpeed(DOWN);
+
         if (this.y + this.height < Main.WINDOW_HEIGHT - offsetBottom) {
-            this.y += 5;
+            this.y += speed;
         }
+
         this.currentImage = this.downImage;
     }
 
     int offsetTop = 35;
     public void moveUp() {
+
+        int speed = getMovementSpeed(UP);
+
         if (this.y > offsetTop) {
-            this.y -= 5;
+            this.y -= speed;
         }
+
         this.currentImage = this.upImage;
     }
-
     // --- פונקציה שקשורה רק לגיף ---
     private void loadGifFrames(String path) {
         try {
@@ -209,25 +259,57 @@ public class Player {
         updateGifDimensions();
     }
 
-    public void paint(Graphics graphics) {
-        if (isMoving) {
-            if (this.currentImage != null) {
-                graphics.drawImage(this.currentImage, this.x, this.y, this.width, this.height, null);
+    public void paint(Graphics graphics , boolean isPaused) {
+
+        long idleTime = System.currentTimeMillis() - this.lastMoveTime;
+
+        boolean shouldShowGif = (idleTime >= 1000);
+
+        // --- התיקון החדש לבעיית הקפיצה ---
+        if (isPaused) {
+            // אם המשחק בעצירה, אנחנו מתעלמים מהזמן ומשתמשים בזיכרון שלנו
+            shouldShowGif = this.wasShowingGif;
+
+            // טריק: אם היינו בתמונת תנועה כשעצרנו, נמשוך את זמן התזוזה קדימה
+            // כדי שברגע שנחזור מהעצירה, הטיימר לא יקפוץ מיד לגיף!
+            if (!shouldShowGif) {
+                this.lastMoveTime = System.currentTimeMillis();
             }
         } else {
-            // --- החלק שקשור לציור הגיף ---
+            // אם המשחק רץ, נשמור את המצב הנוכחי בזיכרון למקרה שנעצור פתאום
+            this.wasShowingGif = shouldShowGif;
+        }
+        // ------------------------------------
 
-            // בודקים איזה פריים (תא במערך) צריך לצייר עכשיו
-            updateAnimation();
-
-            // מוודאים שהמערך באמת קיים ושיש בו תמונות
-            if (this.frames != null && this.frames.length > 0) {
-                // this.frames[currentFrameIndex]: שולפים את התמונה מהתא הנוכחי במערך
-                // this.x + this.gifOffsetX: קובעים את המיקום בציר ה-X עם חישוב האמצע
-                // this.y + this.gifOffsetY: קובעים את המיקום בציר ה-Y עם חישוב האמצע
-                // this.gifDrawWidth, this.gifDrawHeight: מציירים את התמונה בגודל המוגדל
-                graphics.drawImage(this.frames[currentFrameIndex], this.x + this.gifOffsetX, this.y + this.gifOffsetY, this.gifDrawWidth, this.gifDrawHeight, null);
+        // שלב ב': ציור תמונת התנועה הסטטית (אם הוחלט לא להראות גיף)
+        if (!shouldShowGif) {
+            if (this.currentImage != null) {
+                graphics.drawImage(
+                        this.currentImage,
+                        this.x,
+                        this.y,
+                        this.width,
+                        this.height,
+                        null
+                );
             }
+            return; // סיימנו לצייר, יוצאים מהפונקציה
+        }
+
+        // שלב ג': ציור אנימציית הגיף
+        if (!isPaused) {
+            updateAnimation(); // מקדמים את האנימציה רק אם אנחנו לא בעצירה
+        }
+
+        if (this.frames != null && this.frames.length > 0) {
+            graphics.drawImage(
+                    this.frames[currentFrameIndex],
+                    this.x + this.gifOffsetX,
+                    this.y + this.gifOffsetY,
+                    this.gifDrawWidth,
+                    this.gifDrawHeight,
+                    null
+            );
         }
     }
 

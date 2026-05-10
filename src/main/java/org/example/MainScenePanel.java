@@ -100,18 +100,22 @@ public class MainScenePanel extends JPanel {
 
         int difficultyTier = (level - 1) / 3;
         int mazeTemplate = (level - 1) % 3;
-
         int amountOfCandies = 5 + (difficultyTier * 3);
-        // תמיד לפחות 3 ירקות רגילים!
-        int normalEnemies = 3 + difficultyTier;
-        int smartEnemies = difficultyTier;
+
+        // חישוב סך כל האויבים שאמורים להיות בשלב הזה
+        int totalEnemies = 3 + (difficultyTier * 2);
+
+        //  אם אנחנו בשלבים הראשונים, אפס גמבות, אחר כך גמבה אחת
+        int smartEnemies = (difficultyTier > 0) ? 1 : 0;
+
+        // כל שאר האויבים שחסרים יהפכו אוטומטית לירקות רגילים
+        int normalEnemies = totalEnemies - smartEnemies;
 
         MazeBuilder mazeBuilder = new MazeBuilder();
         // מעבירים גם את הקושי לבונה המבוכים
         this.cakes = mazeBuilder.buildMaze(mazeTemplate, Main.WINDOW_WIDTH, Main.WINDOW_HEIGHT, difficultyTier);
         this.cakesCount = mazeBuilder.getCakesCount();
-
-        spawnPrizes(amountOfCandies);
+        spawnPrizes(amountOfCandies); // כמות הסוכריות בשלב
 
         // שולחים למחלקת האויבים גם את התבנית כדי שידעו איפה לחסום
         setupEnemiesForLevel(normalEnemies, smartEnemies, mazeTemplate);
@@ -415,7 +419,11 @@ public class MainScenePanel extends JPanel {
         );
 
         JDialog dialog = pane.createDialog(SwingUtilities.windowForComponent(this), title);
-        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+
+        // --- שתי השורות שמעלימות את האיקס לחלוטין ---
+        dialog.setUndecorated(true); // מבטל את הפס העליון של החלון!
+        dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE); // ליתר ביטחון
+
         dialog.setVisible(true);
 
         Object selectedValue = pane.getValue();
@@ -424,7 +432,7 @@ public class MainScenePanel extends JPanel {
             // בחרו ב- Restart Level
             this.score = 0;
             loadLevel(this.currentLevel);
-            return true; // מבקשים מהלולאה להמשיך לרוץ (עם הרמה המאופסת)
+            return true; // מבקשים מהלולאה להמשיך לרוץ
         } else {
             // בחרו ב- Back to Menu
             Window parentWindow = SwingUtilities.windowForComponent(this);
@@ -432,7 +440,7 @@ public class MainScenePanel extends JPanel {
                 parentWindow.dispose();
             }
             new MainMenu();
-            return false; // ה-false הזה יגרום ללולאה להרוג את עצמה!
+            return false; // הורגים את הלולאה
         }
     }
 

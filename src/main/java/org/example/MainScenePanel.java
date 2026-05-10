@@ -444,7 +444,6 @@ public class MainScenePanel extends JPanel {
         }
     }
 
-
     @Override
     public void paintComponent(Graphics graphics) {
         super.paintComponent(graphics);

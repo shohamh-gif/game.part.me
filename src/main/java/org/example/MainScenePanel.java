@@ -139,18 +139,17 @@ public class MainScenePanel extends JPanel {
             int currentX = spawnX[enemyIndex % spawnX.length];
             int currentY = spawnY[enemyIndex % spawnY.length];
 
+            int enemySize = 46;
             int type = i % 4;
-
             if (type == 0) {
-                this.enemies[enemyIndex] = new EnemyBroccoli(currentX, currentY, 46, 46);
+                this.enemies[enemyIndex] = new EnemyBroccoli(currentX, currentY, enemySize, enemySize);
             } else if (type == 1) {
-                this.enemies[enemyIndex] = new EnemyEggplant(currentX, currentY, 46, 46);
+                this.enemies[enemyIndex] = new EnemyEggplant(currentX, currentY, enemySize, enemySize);
             } else if (type == 2) {
-                this.enemies[enemyIndex] = new EnemyCarrot(currentX, currentY, 46, 46);
+                this.enemies[enemyIndex] = new EnemyGeneric(currentX, currentY, enemySize, enemySize, "Carrot");
             } else {
-                this.enemies[enemyIndex] = new EnemyCorn(currentX, currentY, 46, 46);
+                this.enemies[enemyIndex] = new EnemyGeneric(currentX, currentY, enemySize, enemySize, "Corn");
             }
-
             enemyIndex++;
         }
 
